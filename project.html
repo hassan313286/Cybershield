@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>CyberShield | Password & Phishing Security Suite</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #f0f2f5;
+            --card: #ffffff;
+            --text: #1a1a2e;
+            --text-light: #666;
+            --border: #e0e0e0;
+            --accent: #009688;
+            --danger: #f44336;
+            --warning: #ff9800;
+            --success: #4caf50;
+            --shadow: 0 4px 12px rgba(0,0,0,0.1);
+            --hello-color: #ffcc00;
+            --error-bg: #ffebee;
+            --valid-bg: #e8f5e9;
+        }
+        body.dark {
+            --bg: #0a0f1e;
+            --card: #0f172a;
+            --text: #e0e0e0;
+            --border: #1e2a3a;
+            --accent: #00ffff;
+            --hello-color: #ffd966;
+            --error-bg: #2a1a1a;
+            --valid-bg: #1a2a1a;
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); padding: 20px; min-height: 100vh; }
+        .container { max-width: 700px; margin: 0 auto; }
+        
+        /* Fade-in Animation */
+        .fade-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 1s ease;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .fade-overlay.hide { opacity: 0; pointer-events: none; }
+        .fade-icon { font-size: 80px; animation: bounce 0.8s ease; }
+        .fade-title { font-size: 32px; font-weight: bold; color: var(--accent); animation: slideUp 0.6s ease; }
+        .fade-sub { font-size: 16px; color: var(--text-light); animation: slideUp 0.6s ease 0.2s both; }
+        @keyframes bounce { 0% { transform: scale(0.3); opacity: 0; } 50% { transform: scale(1.2); } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        
+        /* Header */
+        .header { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 30px; position: relative; }
+        .hello-text { color: var(--hello-color); font-size: 36px; font-weight: bold; text-align: center; width: 100%; text-shadow: 0 2px 4px rgba(0,0,0,0.1); margin: 0; position: absolute; left: 0; right: 0; pointer-events: none; }
+        .menu-btn { background: var(--card); border: 1px solid var(--border); padding: 8px 16px; border-radius: 50px; cursor: pointer; font-size: 18px; font-weight: bold; position: relative; z-index: 10; }
+        .dropdown { position: absolute; top: 45px; right: 0; background: var(--card); border-radius: 12px; box-shadow: var(--shadow); width: 220px; display: none; z-index: 100; border: 1px solid var(--border); }
+        .dropdown.show { display: block; }
+        .dropdown-item { padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--border); }
+        .dropdown-item:last-child { border-bottom: none; }
+        .dropdown-item:hover { background: var(--accent); color: #000; }
+        
+        .cards { display: flex; flex-direction: column; gap: 25px; margin-top: 30px; }
+        .card { background: var(--card); border-radius: 24px; padding: 35px 20px; text-align: center; cursor: pointer; border: 1px solid var(--border); transition: transform 0.2s, box-shadow 0.2s; }
+        .card:hover { transform: translateY(-5px); box-shadow: var(--shadow); }
+        .card-icon { font-size: 55px; margin-bottom: 15px; }
+        .card h2 { font-size: 24px; color: var(--accent); margin-bottom: 10px; }
+        .card p { color: var(--text-light); font-size: 14px; }
+        
+        .tool-panel { background: var(--card); border-radius: 24px; padding: 30px; border: 1px solid var(--border); box-shadow: var(--shadow); }
+        .password-container { position: relative; margin-bottom: 20px; }
+        .password-container input { width: 100%; padding: 16px 50px 16px 20px; border-radius: 50px; border: 2px solid var(--border); background: var(--bg); color: var(--text); outline: none; font-size: 16px; }
+        .password-container input:focus { border-color: var(--accent); }
+        .eye-icon { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 20px; background: none; border: none; color: var(--text-light); }
+        
+        .warning-msg { background: #fff3cd; color: #856404; padding: 10px 15px; border-radius: 12px; font-size: 13px; margin-bottom: 15px; border-left: 3px solid #ffc107; display: flex; align-items: center; gap: 8px; }
+        body.dark .warning-msg { background: #2c2b14; color: #ffd966; border-left-color: #ffd966; }
+        
+        .url-container { margin-bottom: 20px; }
+        .url-container input { width: 100%; padding: 16px 20px; border-radius: 50px; border: 2px solid var(--border); background: var(--bg); color: var(--text); outline: none; font-size: 16px; }
+        .url-container input:focus { border-color: var(--accent); }
+        /* Dark mode input field - FIXED: background soft, not red */
+        body.dark .url-container input { background: #1a1f2e; color: #e0e0e0; border-color: #1e2a3a; }
+        body.dark .url-container input:focus { border-color: #00ffff; outline: none; }
+        .url-container input.error { border-color: var(--danger); }
+        /* Light mode error */
+        .url-container input.error { border-color: var(--danger); background: #ffebee; }
+        /* Dark mode error - soft red background, text still readable */
+        body.dark .url-container input.error { border-color: #ff6666; background: #2a1a1a; color: #e0e0e0; }
+        .url-container input.valid { border-color: var(--success); background: var(--valid-bg); }
+        
+        .scan-btn, .back-btn { width: 100%; padding: 14px; background: var(--accent); border: none; border-radius: 50px; font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 5px; transition: 0.2s; }
+        .scan-btn:hover, .back-btn:hover { opacity: 0.85; }
+        .back-btn { background: var(--card); border: 1px solid var(--border); margin-bottom: 20px; }
+        
+        .emoji { font-size: 60px; text-align: center; margin-bottom: 15px; }
+        .strength-bar-bg { background: #333; height: 12px; border-radius: 10px; overflow: hidden; margin: 20px 0; }
+        .strength-fill { width: 0%; height: 100%; transition: width 0.4s ease; border-radius: 10px; }
+        .strength-text { text-align: center; font-weight: bold; font-size: 18px; margin: 15px 0; }
+        .crack-box { background: var(--bg); padding: 15px; border-radius: 16px; margin: 20px 0; text-align: center; }
+        .crack-time { font-size: 24px; font-weight: bold; color: var(--accent); }
+        
+        .req-grid { display: flex; flex-wrap: wrap; gap: 12px; margin: 15px 0; }
+        .req-chip { padding: 8px 16px; border-radius: 30px; font-size: 13px; background: var(--bg); border: 1px solid var(--border); }
+        .req-chip.valid { background: #2e7d32; color: white; }
+        .req-chip.invalid { background: #f44336; color: white; }
+        body.dark .req-chip.valid { background: #1b5e20; }
+        body.dark .req-chip.invalid { background: #c62828; }
+        
+        .gen-tabs { display: flex; gap: 12px; margin: 20px 0; }
+        .gen-tab { flex: 1; text-align: center; padding: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 50px; cursor: pointer; }
+        .gen-tab.active { background: var(--accent); color: white; }
+        .password-list { background: var(--bg); border-radius: 16px; padding: 15px; max-height: 300px; overflow-y: auto; }
+        .password-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid var(--border); font-family: monospace; }
+        .copy-btn { background: var(--accent); border: none; padding: 6px 15px; border-radius: 25px; cursor: pointer; }
+        .input-group { margin-bottom: 15px; }
+        .input-group input { width: 100%; padding: 14px; border-radius: 30px; border: 1px solid var(--border); background: var(--bg); color: var(--text); outline: none; }
+        .gen-btn { width: 100%; padding: 12px; background: var(--accent); border: none; border-radius: 50px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        
+        .result-card { margin-top: 25px; padding: 20px; background: var(--bg); border-radius: 20px; }
+        .score-number { font-size: 48px; font-weight: bold; text-align: center; margin: 10px 0; }
+        .score-bar-bg { background: #333; height: 12px; border-radius: 10px; margin: 15px 0; }
+        .score-bar-fill { height: 100%; width: 0%; transition: width 0.8s ease; border-radius: 10px; }
+        .verdict { font-size: 18px; font-weight: bold; text-align: center; padding: 12px; border-radius: 12px; margin: 15px 0; }
+        .detail-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 8px; }
+        .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+        .badge-high { background: var(--danger); color: white; }
+        .badge-medium { background: var(--warning); color: black; }
+        .badge-low { background: var(--success); color: white; }
+        
+        .loader { text-align: center; padding: 40px; }
+        .spinner { width: 50px; height: 50px; border: 4px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 15px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .error-msg { color: var(--danger); font-size: 13px; padding: 10px 12px; background: #ffebee; border-radius: 10px; display: none; margin-top: 10px; }
+        body.dark .error-msg { background: #2a1a1a; color: #ff8888; }
+        .live-feedback { font-size: 12px; margin-top: 8px; margin-left: 15px; }
+        .live-feedback.valid { color: var(--success); }
+        .live-feedback.invalid { color: var(--danger); }
+        
+        .footer { text-align: center; margin-top: 20px; font-size: 11px; color: var(--text-light); }
+        .header-nav { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+        
+        @media (max-width: 550px) { .gen-tabs { flex-direction: column; } .hello-text { font-size: 28px; } }
+    </style>
+</head>
+<body>
+<div id="fadeOverlay" class="fade-overlay">
+    <div class="fade-icon">🛡️</div>
+    <div class="fade-title">CyberShield</div>
+    <div class="fade-sub">Security Suite</div>
+    <div class="fade-sub" style="font-size:12px;">Protecting your digital world</div>
+</div>
+
+<div id="mainContent" style="display: none;">
+    <div class="container" id="app"></div>
+</div>
+
+<script>
+    // =============================================================
+    // FADE-IN ANIMATION
+    // =============================================================
+    setTimeout(() => {
+        const overlay = document.getElementById('fadeOverlay');
+        const mainContent = document.getElementById('mainContent');
+        overlay.classList.add('hide');
+        setTimeout(() => {
+            overlay.style.display = 'none';
+            mainContent.style.display = 'block';
+        }, 1000);
+    }, 1500);
+    
+    // =============================================================
+    // DARK MODE
+    // =============================================================
+    let darkMode = localStorage.getItem('darkMode') === 'true';
+    if (darkMode) document.body.classList.add('dark');
+    
+    function toggleTheme() {
+        darkMode = !darkMode;
+        localStorage.setItem('darkMode', darkMode);
+        document.body.classList.toggle('dark', darkMode);
+        render();
+    }
+    
+    // =============================================================
+    // APP STATE
+    // =============================================================
+    let currentPage = "home";
+    
+    // =============================================================
+    // PASSWORD STRENGTH CHECKER (Same as before)
+    // =============================================================
+    const commonPasswords = new Set([
+        "123456", "password", "123456789", "qwerty", "abc123", "admin", 
+        "welcome", "iloveyou", "sunshine", "princess", "dragon", "master",
+        "letmein", "trustno1", "hello123", "passw0rd", "12345", "12345678"
+    ]);
+    
+    function hasRepeatedChars(password) {
+        let maxRepeat = 1, currentRepeat = 1;
+        for (let i = 1; i < password.length; i++) {
+            if (password[i] === password[i-1]) { currentRepeat++; maxRepeat = Math.max(maxRepeat, currentRepeat); }
+            else { currentRepeat = 1; }
+        }
+        return { hasRepeated: maxRepeat >= 4, count: maxRepeat };
+    }
+    
+    function hasKeyboardPattern(password) {
+        const patterns = ["qwerty", "wertyu", "ertyui", "rtyuio", "tyuiop", "asdfgh", "sdfghj", "dfghjk", "fghjkl", "zxcvbn", "xcvbnm", "123456", "234567", "345678", "456789", "567890", "abcdef", "bcdefg", "cdefgh", "defghi", "efghij"];
+        const lowerPwd = password.toLowerCase();
+        for (let pattern of patterns) { if (lowerPwd.includes(pattern)) return true; }
+        return false;
+    }
+    
+    function checkPasswordStrength(password) {
+        if (!password) return null;
+        const checks = {
+            length: password.length >= 8,
+            upper: /[A-Z]/.test(password),
+            lower: /[a-z]/.test(password),
+            digit: /[0-9]/.test(password),
+            special: /[!@#$%^&*()_\-+={}[\]|\\:;"'<>,.?/`~]/.test(password)
+        };
+        let score = (checks.length?1:0)+(checks.upper?1:0)+(checks.lower?1:0)+(checks.digit?1:0)+(checks.special?1:0);
+        let isCommon = commonPasswords.has(password.toLowerCase());
+        let repeated = hasRepeatedChars(password);
+        let hasPattern = hasKeyboardPattern(password);
+        let penalty = 0, warnings = [];
+        if (repeated.hasRepeated) { penalty++; warnings.push(`Repeated characters (${repeated.count}+ times)`); }
+        if (hasPattern) { penalty++; warnings.push("Keyboard pattern detected (e.g., qwerty, 12345)"); }
+        let finalScore = Math.max(0, Math.min(5, score - penalty));
+        let level, color, emoji, width, crackTime, note;
+        if (isCommon || finalScore <= 2) {
+            level = "VERY WEAK"; color = "#f44336"; emoji = "😢"; width = 25; crackTime = "Less than 1 second"; note = isCommon ? "⚠️ Found in common password dictionary!" : "Too weak! Add more characters.";
+        } else if (finalScore === 3) {
+            level = "WEAK"; color = "#ff9800"; emoji = "🤔"; width = 50; crackTime = "2 - 10 seconds"; note = "Add uppercase, numbers, or special characters";
+        } else if (finalScore === 4) {
+            level = "MEDIUM"; color = "#ffc107"; emoji = "👍"; width = 75; crackTime = "Days to months"; note = "Good password, but can be stronger";
+        } else {
+            let charset = 0;
+            if (checks.lower) charset += 26;
+            if (checks.upper) charset += 26;
+            if (checks.digit) charset += 10;
+            if (checks.special) charset += 32;
+            let entropy = password.length * Math.log2(charset);
+            let years = Math.pow(2, entropy) / 1e9 / 86400 / 365;
+            if (years < 50) { crackTime = Math.round(years) + " years"; level = "STRONG"; emoji = "😎"; width = 100; color = "#4caf50"; note = "Under 50 years - Strong!"; }
+            else { crackTime = "50+ years"; level = "VERY STRONG"; emoji = "🎉🔥"; width = 100; color = "#00e676"; note = "Excellent! Very secure."; }
+        }
+        return { level, color, emoji, width, crackTime, note, checks, warnings };
+    }
+    
+    function generateRandomStrong() {
+        const upper = "ABCDEFGHJKLMNPQRSTUVWXYZ", lower = "abcdefghijkmnopqrstuvwxyz", digits = "23456789", special = "!@#$%&*?";
+        let pwd = [];
+        pwd.push(upper[Math.floor(Math.random() * upper.length)]);
+        pwd.push(lower[Math.floor(Math.random() * lower.length)]);
+        pwd.push(digits[Math.floor(Math.random() * digits.length)]);
+        pwd.push(special[Math.floor(Math.random() * special.length)]);
+        const all = upper + lower + digits + special;
+        for (let i = 0; i < 12; i++) pwd.push(all[Math.floor(Math.random() * all.length)]);
+        for (let i = pwd.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pwd[i], pwd[j]] = [pwd[j], pwd[i]]; }
+        return pwd.join('').substring(0, 16);
+    }
+    
+    function generateComplexPersonalPassword(name, dob) {
+        const specialChars = "!@#$%&*?_-+=[]{}";
+        const digits = "0123456789";
+        let base = (name || "user").toLowerCase().replace(/\s/g, '');
+        if (base === "") base = "user";
+        let year = "1990", month = "01", day = "01";
+        if (dob && dob.includes('/')) {
+            const parts = dob.split('/');
+            day = parts[0] || "01";
+            month = parts[1] || "01";
+            year = parts[2] || "1990";
+        }
+        let reversedName = base.split('').reverse().join('');
+        let mixedCaseName = "";
+        for (let i = 0; i < base.length; i++) {
+            mixedCaseName += i % 2 === 0 ? base[i].toUpperCase() : base[i].toLowerCase();
+        }
+        let randomChars1 = "", randomChars2 = "", randomChars3 = "";
+        for (let i = 0; i < 3; i++) {
+            randomChars1 += specialChars[Math.floor(Math.random() * specialChars.length)];
+            randomChars2 += digits[Math.floor(Math.random() * digits.length)];
+            randomChars3 += specialChars[Math.floor(Math.random() * specialChars.length)] + digits[Math.floor(Math.random() * digits.length)];
+        }
+        let reversedYear = year.split('').reverse().join('');
+        let reversedDay = day.split('').reverse().join('');
+        let reversedMonth = month.split('').reverse().join('');
+        let passwords = [];
+        passwords.push(`${reversedName}${randomChars1}${year}${randomChars2}`);
+        passwords.push(`${mixedCaseName}${randomChars3}${day}${month}${reversedYear}`);
+        passwords.push(`${base}${specialChars[0]}${reversedName.substring(0, 4)}${reversedYear}${digits[3]}`);
+        passwords.push(`${specialChars[2]}${reversedName}${year}${randomChars2}${specialChars[4]}${reversedDay}`);
+        passwords.push(`${mixedCaseName}${specialChars[1]}${reversedMonth}${randomChars2}${reversedName.substring(0, 3)}${specialChars[3]}`);
+        let finalPasswords = passwords.map(p => {
+            let trimmed = p.length > 16 ? p.slice(0, 16) : p;
+            if (!/[A-Z]/.test(trimmed)) trimmed += "A";
+            if (!/[a-z]/.test(trimmed)) trimmed += "a";
+            if (!/[0-9]/.test(trimmed)) trimmed += "1";
+            if (!/[!@#$%&*?]/.test(trimmed)) trimmed += "!";
+            return trimmed.length > 16 ? trimmed.slice(0, 16) : trimmed;
+        });
+        return finalPasswords;
+    }
+    
+    function formatDOB(input) {
+        let value = input.value.replace(/\D/g, '');
+        if (value.length >= 3 && value.length < 5) value = value.slice(0,2) + '/' + value.slice(2);
+        else if (value.length >= 5 && value.length < 7) value = value.slice(0,2) + '/' + value.slice(2,4) + '/' + value.slice(4);
+        else if (value.length >= 7) value = value.slice(0,2) + '/' + value.slice(2,4) + '/' + value.slice(4,8);
+        input.value = value;
+    }
+    
+    // =============================================================
+    // IMPROVED PHISHING URL DETECTOR - FIXED VERSION
+    // =============================================================
+    
+    // Banking domain whitelist (Option C)
+    const trustedBankDomains = [
+        "easypaisa.com", "easypaisa.com.pk", "nbp.com.pk", "nbp.com", "habibbank.com",
+        "hbl.com", "ubl.com.pk", "mcb.com.pk", "alliedbank.com.pk", "bankalfalah.com",
+        "meezanbank.com", "askaribank.com", "faysalbank.com", "soneribank.com",
+        "standardchartered.com.pk", "citibank.com.pk", "sc.com.pk"
+    ];
+    
+    // Legitimate brands for typosquatting
+    const legitimateBrands = [
+        "google", "facebook", "amazon", "microsoft", "apple", "paypal", 
+        "netflix", "twitter", "instagram", "linkedin", "whatsapp", "github",
+        "yahoo", "reddit", "spotify", "youtube", "twitch", "discord", "gmail",
+        "easypaisa", "nbp", "habibbank", "ubl", "mcb", "alliedbank", "meezan"
+    ];
+    
+    const suspiciousTLDs = [".tk", ".ml", ".ga", ".cf", ".gq", ".xyz", ".zip", ".click", ".top", ".download", ".work", ".date", ".loan", ".win", ".bid"];
+    const phishingKeywords = ["login", "verify", "secure", "update", "confirm", "account", "signin", "auth", "password", "banking", "alert", "suspended", "unusual", "validate", "authenticate", "verify-account", "secure-login"];
+    
+    function levenshteinDistance(a, b) {
+        const matrix = [];
+        for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+        for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+        for (let i = 1; i <= b.length; i++) {
+            for (let j = 1; j <= a.length; j++) {
+                const cost = a[j-1] === b[i-1] ? 0 : 1;
+                matrix[i][j] = Math.min(matrix[i-1][j] + 1, matrix[i][j-1] + 1, matrix[i-1][j-1] + cost);
+            }
+        }
+        return matrix[b.length][a.length];
+    }
+    
+    function detectTyposquatting(hostname) {
+        let cleanHost = hostname.replace(/^www\./i, '').replace(/\.(com|org|net|co|uk|io|pk)$/i, '');
+        let normalizedHost = cleanHost.toLowerCase()
+            .replace(/0/g, 'o').replace(/1/g, 'i').replace(/3/g, 'e')
+            .replace(/4/g, 'a').replace(/5/g, 's').replace(/@/g, 'a').replace(/8/g, 'b');
+        for (let brand of legitimateBrands) {
+            let distance = levenshteinDistance(cleanHost, brand);
+            if (distance <= 2 && distance > 0) return { detected: true, brand: brand, distance: distance };
+            let normDistance = levenshteinDistance(normalizedHost, brand);
+            if (normDistance <= 2 && normDistance > 0) return { detected: true, brand: brand, distance: normDistance };
+            if (cleanHost.includes(brand) && cleanHost.length > brand.length + 1) return { detected: true, brand: brand, distance: 1 };
+        }
+        return { detected: false };
+    }
+    
+    function isTrustedBankDomain(hostname) {
+        for (let bank of trustedBankDomains) {
+            if (hostname === bank || hostname.endsWith('.' + bank)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    function detectSuspiciousTLD(hostname) {
+        for (let tld of suspiciousTLDs) {
+            if (hostname.endsWith(tld)) return { detected: true, tld: tld };
+        }
+        return { detected: false };
+    }
+    
+    function detectPhishingKeywords(url, hostname) {
+        const lowerUrl = url.toLowerCase();
+        const lowerHost = hostname.toLowerCase();
+        for (let kw of phishingKeywords) {
+            if (lowerUrl.includes(kw) || lowerHost.includes(kw)) {
+                return { detected: true, keyword: kw };
+            }
+        }
+        return { detected: false };
+    }
+    
+    function isValidUrlFormat(url) {
+        if (!url || url.trim() === "") return false;
+        const trimmed = url.trim();
+        if (trimmed.includes(' ')) return false;
+        if (/[<>{}|\\^`]/.test(trimmed)) return false;
+        if (trimmed.length < 3) return false;
+        // Support deep links (easypaisa://, nbp://, app://, etc.)
+        const deepLinkPattern = /^[a-zA-Z][a-zA-Z0-9+\-.]*:\/\/.+$/;
+        if (deepLinkPattern.test(trimmed)) return true;
+        const domainPattern = /^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]?(?:\.[a-zA-Z]{2,})+$/;
+        const urlPattern = /^(https?:\/\/)?([a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]?\.)+[a-zA-Z]{2,}(\/.*)?$/;
+        return domainPattern.test(trimmed) || urlPattern.test(trimmed);
+    }
+    
+    async function checkDomainExists(hostname) {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3000);
+            const response = await fetch(`https://dns.google/resolve?name=${hostname}&type=A`, { signal: controller.signal });
+            clearTimeout(timeoutId);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.Answer && data.Answer.length > 0) return true;
+            }
+        } catch(e) {}
+        return new Promise((resolve) => {
+            const img = new Image();
+            const timeoutId = setTimeout(() => { img.src = ""; resolve(false); }, 2000);
+            img.onload = () => { clearTimeout(timeoutId); resolve(true); };
+            img.onerror = () => { clearTimeout(timeoutId); resolve(false); };
+            img.src = `https://${hostname}/favicon.ico?t=${Date.now()}`;
+        });
+    }
+    
+    async function scanURL(inputUrl) {
+        const trimmed = inputUrl.trim();
+        if (!trimmed) return { error: "❌ Please enter a URL to scan" };
+        if (trimmed.includes(' ')) return { error: "❌ URL cannot contain spaces" };
+        if (trimmed.length < 3) return { error: "❌ URL is too short" };
+        if (!isValidUrlFormat(trimmed)) return { error: "❌ Invalid URL format. Please enter a valid URL like google.com or easypaisa://payment" };
+        
+        // Handle deep links specially
+        const deepLinkPattern = /^[a-zA-Z][a-zA-Z0-9+\-.]*:\/\//;
+        let isDeepLink = deepLinkPattern.test(trimmed);
+        let hostname = "";
+        let cleanUrl = trimmed;
+        
+        if (isDeepLink) {
+            try {
+                let domainPart = trimmed.split("://")[1].split("/")[0];
+                hostname = domainPart;
+                cleanUrl = "https://" + hostname;
+            } catch(e) {
+                return { error: "❌ Could not parse deep link" };
+            }
+        } else {
+            if (!cleanUrl.startsWith('http')) cleanUrl = 'https://' + cleanUrl;
+            try {
+                hostname = new URL(cleanUrl).hostname;
+            } catch(e) {
+                return { error: "❌ Could not parse URL" };
+            }
+        }
+        
+        let riskScore = 0;
+        let threats = [];
+        let isPhishing = false;
+        
+        // Check trusted banking domain first
+        if (isTrustedBankDomain(hostname)) {
+            return {
+                url: hostname, score: 10, severity: "LOW RISK", severityClass: "badge-low",
+                verdict: "✅ SAFE - Trusted Banking Domain",
+                threats: ["Domain belongs to trusted bank/easypaisa"],
+                httpsStatusText: cleanUrl.startsWith('https') ? "HTTPS ✅ Secure" : "HTTP ⚠️ Not Secure"
+            };
+        }
+        
+        const typosquatting = detectTyposquatting(hostname);
+        if (typosquatting.detected) {
+            riskScore += 45;
+            threats.push(`Typosquatting - impersonating "${typosquatting.brand}.com"`);
+            isPhishing = true;
+        }
+        
+        const suspiciousTLD = detectSuspiciousTLD(hostname);
+        if (suspiciousTLD.detected) {
+            riskScore += 35;
+            threats.push(`Suspicious TLD (${suspiciousTLD.tld}) - commonly used for phishing`);
+            isPhishing = true;
+        }
+        
+        const phishingKW = detectPhishingKeywords(trimmed, hostname);
+        if (phishingKW.detected) {
+            riskScore += 20;
+            threats.push(`Contains suspicious keyword "${phishingKW.keyword}"`);
+            isPhishing = true;
+        }
+        
+        if (!cleanUrl.startsWith('https') && !isDeepLink) {
+            riskScore += 15;
+            threats.push("No HTTPS encryption - connection not secure");
+        }
+        
+        if (isPhishing) {
+            let finalScore = Math.min(100, riskScore);
+            let severity, severityClass, verdict;
+            if (finalScore >= 70) { severity = "HIGH RISK"; severityClass = "badge-high"; verdict = "🚨 PHISHING DETECTED - Malicious!"; }
+            else if (finalScore >= 40) { severity = "MEDIUM RISK"; severityClass = "badge-medium"; verdict = "⚠️ SUSPICIOUS - Be careful"; }
+            else { severity = "LOW RISK"; severityClass = "badge-low"; verdict = "⚠️ Suspicious pattern detected"; }
+            return { url: hostname, score: finalScore, severity, severityClass, verdict, threats: threats.slice(0, 5), httpsStatusText: cleanUrl.startsWith('https') ? "HTTPS ✅ Secure" : "HTTP ⚠️ Not Secure" };
+        }
+        
+        const domainExists = await checkDomainExists(hostname);
+        if (!domainExists && !isDeepLink) {
+            return { error: `❌ Domain "${hostname}" does not exist or is not reachable. Please check the URL.` };
+        }
+        
+        return {
+            url: hostname, score: 15, severity: "LOW RISK", severityClass: "badge-low",
+            verdict: "✅ SAFE - No threats detected",
+            threats: ["No phishing patterns detected", "Domain exists and is reachable"],
+            httpsStatusText: cleanUrl.startsWith('https') ? "HTTPS ✅ Secure" : "HTTP ⚠️ Not Secure"
+        };
+    }
+    
+    // =============================================================
+    // RENDER ENGINE
+    // =============================================================
+    function render() {
+        const app = document.getElementById("app");
+        if (!app) return;
+        
+        if (currentPage === "home") {
+            app.innerHTML = `
+                <div class="header">
+                    <div class="hello-text">🛡️ Hello! 👋</div>
+                    <div class="menu-btn" id="menuBtn">⋮</div>
+                </div>
+                <div class="dropdown" id="dropdown">
+                    <div class="dropdown-item" id="themeItem">${darkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}</div>
+                    <div class="dropdown-item" id="helpItem">❓ Help</div>
+                    <div class="dropdown-item" id="privacyItem">🔒 Privacy Policy</div>
+                </div>
+                <div class="cards">
+                    <div class="card" id="passwordCard"><div class="card-icon">🔑</div><h2>Password Strength Checker</h2><p>Check how secure your password is</p></div>
+                    <div class="card" id="urlCard"><div class="card-icon">🎣</div><h2>Phishing URL Detector</h2><p>Detect malicious and fake websites</p></div>
+                </div>
+                <div class="footer">🔒 Protecting your digital world</div>
+            `;
+            document.getElementById("passwordCard").onclick = () => { currentPage = "password"; render(); };
+            document.getElementById("urlCard").onclick = () => { currentPage = "url"; render(); };
+            const menuBtn = document.getElementById("menuBtn");
+            const dropdown = document.getElementById("dropdown");
+            menuBtn.onclick = (e) => { e.stopPropagation(); dropdown.classList.toggle("show"); };
+            document.addEventListener("click", (e) => { if (!dropdown.contains(e.target) && e.target !== menuBtn) dropdown.classList.remove("show"); });
+            document.getElementById("themeItem").onclick = () => { toggleTheme(); dropdown.classList.remove("show"); };
+            document.getElementById("helpItem").onclick = () => { 
+                alert("🔍 HOW TO USE:\n\n🔑 PASSWORD CHECKER:\n• Type your password\n• See strength, time to crack, and requirements\n• Use tabs to generate strong passwords\n\n🎣 PHISHING URL DETECTOR:\n• Enter any URL (e.g., google.com, easypaisa://payment)\n• Click SCAN URL\n• Detects typosquatting, suspicious TLDs, phishing keywords\n• Get risk score and threat detection"); 
+                dropdown.classList.remove("show"); 
+            };
+            document.getElementById("privacyItem").onclick = () => { 
+                alert("🔒 PRIVACY POLICY:\n\n• No passwords or URLs are stored\n• All processing happens locally in your browser\n• Your privacy is 100% protected"); 
+                dropdown.classList.remove("show"); 
+            };
+        }
+        else if (currentPage === "password") {
+            app.innerHTML = `
+                <div class="header-nav"><button class="back-btn" id="backBtn">← Back to Home</button><div style="flex:1"></div></div>
+                <div class="tool-panel">
+                    <div class="emoji" id="emoji">🔐</div>
+                    <div class="password-container">
+                        <input type="password" id="pwdInput" placeholder="Enter your password...">
+                        <button class="eye-icon" id="eyeBtn">👁️</button>
+                    </div>
+                    <div class="warning-msg"><span>⚠️</span> Password should not contain personal information like name, birthdate, email, or phone number</div>
+                    <div class="strength-bar-bg"><div class="strength-fill" id="strengthFill"></div></div>
+                    <div class="strength-text" id="strengthText"></div>
+                    <div class="crack-box"><strong>⏱️ Estimated Time to Crack</strong><div class="crack-time" id="crackTime">—</div><small id="crackNote"></small></div>
+                    <div class="req-grid" id="reqGrid"></div>
+                    <div class="gen-tabs"><div class="gen-tab active" data-tab="random">🔀 Random Strong</div><div class="gen-tab" data-tab="personal">👤 Personal (Name + DOB)</div></div>
+                    <div id="generatorArea"><div class="password-list" style="text-align:center;">Click a tab above to generate passwords</div></div>
+                </div>
+            `;
+            const input = document.getElementById("pwdInput");
+            const eyeBtn = document.getElementById("eyeBtn");
+            let isVisible = false;
+            const defaultReqs = [{ label: "8+ characters", ok: false },{ label: "Uppercase (A-Z)", ok: false },{ label: "Lowercase (a-z)", ok: false },{ label: "Number (0-9)", ok: false },{ label: "Special char (!@#$%)", ok: false }];
+            document.getElementById("reqGrid").innerHTML = defaultReqs.map(r => `<div class="req-chip invalid">❌ ${r.label}</div>`).join('');
+            function update() {
+                const pwd = input.value;
+                if (!pwd) {
+                    document.getElementById("emoji").innerText = "🔐";
+                    document.getElementById("strengthFill").style.width = "0%";
+                    document.getElementById("strengthText").innerHTML = "";
+                    document.getElementById("crackTime").innerText = "—";
+                    document.getElementById("crackNote").innerHTML = "";
+                    document.getElementById("reqGrid").innerHTML = defaultReqs.map(r => `<div class="req-chip invalid">❌ ${r.label}</div>`).join('');
+                    return;
+                }
+                const info = checkPasswordStrength(pwd);
+                document.getElementById("emoji").innerText = info.emoji;
+                document.getElementById("strengthFill").style.width = info.width + "%";
+                document.getElementById("strengthFill").style.backgroundColor = info.color;
+                document.getElementById("strengthText").innerHTML = `<span style="color:${info.color}">${info.level}</span>`;
+                document.getElementById("crackTime").innerText = info.crackTime;
+                document.getElementById("crackNote").innerHTML = info.note;
+                let warningsHtml = "";
+                if (info.warnings && info.warnings.length > 0) { warningsHtml = `<div style="margin-bottom:10px; color:var(--warning);">⚠️ ${info.warnings.join(", ")}</div>`; }
+                const reqs = [{ label: "8+ characters", ok: info.checks.length },{ label: "Uppercase (A-Z)", ok: info.checks.upper },{ label: "Lowercase (a-z)", ok: info.checks.lower },{ label: "Number (0-9)", ok: info.checks.digit },{ label: "Special char (!@#$%)", ok: info.checks.special }];
+                document.getElementById("reqGrid").innerHTML = warningsHtml + reqs.map(r => `<div class="req-chip ${r.ok ? 'valid' : 'invalid'}">${r.ok ? '✅' : '❌'} ${r.label}</div>`).join('');
+            }
+            input.oninput = update;
+            eyeBtn.onclick = () => { isVisible = !isVisible; input.type = isVisible ? "text" : "password"; eyeBtn.innerText = isVisible ? "🙈" : "👁️"; };
+            let activeTab = null;
+            const genArea = document.getElementById("generatorArea");
+            function renderGen() {
+                if (activeTab === "random") {
+                    let passwords = Array(5).fill().map(() => generateRandomStrong());
+                    genArea.innerHTML = `<div class="password-list">${passwords.map(p => `<div class="password-item"><span style="font-family:monospace">${p}</span><button class="copy-btn" data-pwd="${p}">Copy</button></div>`).join('')}</div>`;
+                } else if (activeTab === "personal") {
+                    genArea.innerHTML = `<div class="input-group"><input type="text" id="userName" placeholder="Your Name"></div><div class="input-group"><input type="text" id="userDob" placeholder="DD/MM/YYYY" maxlength="10"></div><button class="gen-btn" id="genBtn">✨ Generate Complex Passwords</button><div id="personalResult"></div>`;
+                    const dobInput = document.getElementById("userDob");
+                    if (dobInput) { dobInput.addEventListener("input", function() { formatDOB(this); }); }
+                    document.getElementById("genBtn")?.addEventListener("click", () => {
+                        let name = document.getElementById("userName")?.value || "";
+                        let dob = document.getElementById("userDob")?.value || "";
+                        let passwords = generateComplexPersonalPassword(name, dob);
+                        document.getElementById("personalResult").innerHTML = `<div class="password-list" style="margin-top:15px;">${passwords.map(p => `<div class="password-item"><span style="font-family:monospace">${p}</span><button class="copy-btn" data-pwd="${p}">Copy</button></div>`).join('')}</div>`;
+                        attachCopyEvents();
+                    });
+                }
+                attachCopyEvents();
+            }
+            document.querySelectorAll(".gen-tab").forEach(tab => {
+                tab.onclick = () => {
+                    document.querySelectorAll(".gen-tab").forEach(t => t.classList.remove("active"));
+                    tab.classList.add("active");
+                    activeTab = tab.dataset.tab;
+                    renderGen();
+                };
+            });
+            function attachCopyEvents() {
+                document.querySelectorAll(".copy-btn").forEach(btn => {
+                    btn.onclick = () => {
+                        let pwd = btn.getAttribute("data-pwd");
+                        if (navigator.clipboard) { navigator.clipboard.writeText(pwd); btn.innerText = "Copied!"; setTimeout(() => btn.innerText = "Copy", 1500); }
+                        else alert("Clipboard not supported");
+                    };
+                });
+            }
+            document.getElementById("backBtn").onclick = () => { currentPage = "home"; render(); };
+            update();
+        }
+        else if (currentPage === "url") {
+            app.innerHTML = `
+                <div class="header-nav"><button class="back-btn" id="backBtn">← Back to Home</button><div style="flex:1"></div></div>
+                <div class="tool-panel">
+                    <div class="url-container"><input type="text" id="urlInput" placeholder="Enter URL (e.g., google.com, easypaisa://payment, nbp.com.pk)"><div class="live-feedback" id="liveFeedback"></div></div>
+                    <button class="scan-btn" id="scanBtn">🔍 SCAN URL</button>
+                    <div class="error-msg" id="errorMsg"></div>
+                    <div id="resultsArea"><div class="result-card" style="text-align:center;">Enter a URL above and click SCAN</div></div>
+                </div>
+            `;
+            const scanBtn = document.getElementById("scanBtn");
+            const urlInput = document.getElementById("urlInput");
+            const errorDiv = document.getElementById("errorMsg");
+            const resultsDiv = document.getElementById("resultsArea");
+            const liveFeedback = document.getElementById("liveFeedback");
+            let isScanning = false;
+            function updateLiveFeedback() {
+                const url = urlInput.value.trim();
+                if (!url) { urlInput.classList.remove("error", "valid"); liveFeedback.innerText = ""; return; }
+                if (isValidUrlFormat(url)) { urlInput.classList.add("valid"); urlInput.classList.remove("error"); liveFeedback.innerText = "✅ Valid URL format"; liveFeedback.className = "live-feedback valid"; }
+                else { urlInput.classList.add("error"); urlInput.classList.remove("valid"); liveFeedback.innerText = "❌ Invalid URL format. Use example: google.com"; liveFeedback.className = "live-feedback invalid"; }
+            }
+            urlInput.oninput = () => { errorDiv.style.display = "none"; updateLiveFeedback(); };
+            scanBtn.onclick = async () => {
+                if (isScanning) return;
+                errorDiv.style.display = "none";
+                const url = urlInput.value.trim();
+                if (!url) { errorDiv.innerText = "❌ Please enter a URL to scan"; errorDiv.style.display = "block"; return; }
+                if (!isValidUrlFormat(url)) { errorDiv.innerText = "❌ Invalid URL format. Please enter a valid URL like google.com or easypaisa://payment"; errorDiv.style.display = "block"; return; }
+                isScanning = true; scanBtn.disabled = true; scanBtn.innerText = "⏳ SCANNING...";
+                resultsDiv.innerHTML = `<div class="loader"><div class="spinner"></div><p>🔍 Analyzing URL...</p><p style="font-size:12px;">Checking for typosquatting, suspicious TLDs, phishing keywords...</p></div>`;
+                await new Promise(r => setTimeout(r, 800));
+                const result = await scanURL(url);
+                if (result.error) { errorDiv.innerText = result.error; errorDiv.style.display = "block";
+                    resultsDiv.innerHTML = `<div class="result-card" style="text-align:center; color:var(--danger);">❌ ${result.error}</div>`;
+                } else {
+                    const scoreColor = result.score >= 70 ? "#f44336" : (result.score >= 40 ? "#ff9800" : "#4caf50");
+                    resultsDiv.innerHTML = `<div class="result-card"><div class="score-number" style="color:${scoreColor}">${result.score}/100</div><div class="score-bar-bg"><div class="score-bar-fill" style="width:${result.score}%; background:${scoreColor}"></div></div><div class="verdict" style="background:${scoreColor}20; color:${scoreColor}">${result.verdict}</div><div class="detail-row"><strong>🔍 Scanned URL:</strong> ${result.url}</div><div class="detail-row"><strong>🔒 Security:</strong> ${result.httpsStatusText}</div><div class="detail-row"><strong>📊 Threat Level:</strong> <span class="badge ${result.severityClass}">${result.severity}</span></div>${result.threats.length ? `<div class="detail-row"><strong>⚠️ Detected Issues:</strong> ${result.threats.join(", ")}</div>` : `<div class="detail-row"><strong>✅ No threats detected</strong></div>`}</div>`;
+                }
+                scanBtn.disabled = false; scanBtn.innerText = "🔍 SCAN URL"; isScanning = false;
+            };
+            document.getElementById("backBtn").onclick = () => { currentPage = "home"; render(); };
+            updateLiveFeedback();
+        }
+    }
+    render();
+</script>
+</body>
+</html>
